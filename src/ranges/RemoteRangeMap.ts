@@ -41,6 +41,10 @@ class RemoteRangeMap {
     }
     return this
   }
+  removePeer_(peerId): this {
+    delete this.store[peerId]
+    return this
+  }
 }
 
 export default RemoteRangeMap

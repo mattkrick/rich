@@ -58,11 +58,10 @@ class App extends React.Component<Props, State> {
   }
 
   onChange = (content, localRange) => {
-    const isContentChanged = content.isChanged()
-    if (isContentChanged) {
+    this.richConnector.dispatch(content, localRange)
+    if (content.isChanged()) {
       this.setState({content})
     }
-    this.richConnector.dispatch(localRange, content, isContentChanged)
   }
 
   render() {

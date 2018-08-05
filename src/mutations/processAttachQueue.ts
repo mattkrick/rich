@@ -15,8 +15,8 @@ const processAttachQueue = (attachQueue: AttachQueue, content: RichContent) => {
     for (let ii = 0; ii < target.childNodes.length; ii++) {
       const node = target.childNodes[ii] as any
       if (!nodeSet.has(node)) continue // always noop? probably in delete queue
-      content.change_((doc: any) => {
-        const targetDoc = doc._get(targetId)
+      content.change_((proxyDoc: any) => {
+        const targetDoc = proxyDoc._get(targetId)
         targetDoc.children.insertAt(ii, node._json)
         const textNode = targetDoc.children[ii]
         const { content } = node._json as AutomergeTextNode | TemporaryTextNode
@@ -25,7 +25,7 @@ const processAttachQueue = (attachQueue: AttachQueue, content: RichContent) => {
           textNode.content.insertAt(0, ...content.split(''))
         }
       })
-      target._json = content.doc._state.getIn(['opSet', 'cache', targetId])
+      target._json = content.root._state.getIn(['opSet', 'cache', targetId])
       node._json = (target._json as any).children[ii]
       const childNodeSet = attachQueue.get(node)
       attachNodes(childNodeSet, node)

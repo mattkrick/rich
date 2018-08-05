@@ -14,11 +14,11 @@ const setContent = (node: AutomergeProxy) => {
 }
 
 const fromJSON = (json: AutomergeElement) => {
-  return Automerge.change(Automerge.init(), 'init', (doc: AutomergeProxy) => {
+  return Automerge.change(Automerge.init(), 'init', (proxyDoc: AutomergeProxy) => {
     Object.keys(json).forEach(key => {
-      doc[key] = (json as any)[key]
+      proxyDoc[key] = (json as any)[key]
     })
-    setContent(doc)
+    setContent(proxyDoc)
   })
 }
 

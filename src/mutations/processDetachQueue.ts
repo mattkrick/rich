@@ -14,11 +14,11 @@ const processDetachQueue = (detachQueue: ChildListQueue, content: RichContent) =
       (child: AutomergeNode) => child._objectId === node._json._objectId
     )
     if (removalIdx !== -1) {
-      content.change_('remove node', (doc: AutomergeProxy) => {
-        const targetDoc = doc._get(targetId)
+      content.change_('remove node', (proxyDoc: AutomergeProxy) => {
+        const targetDoc = proxyDoc._get(targetId)
         targetDoc.children.deleteAt(removalIdx)
       })
-      target._json = content.doc._state.getIn(['opSet', 'cache', targetId])
+      target._json = content.root._state.getIn(['opSet', 'cache', targetId])
     }
   }
 }

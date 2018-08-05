@@ -5,30 +5,30 @@ import fromText from './fromText'
 
 let nextID = 0
 
-export type AutomergeUpdater = (doc: AutomergeProxy) => void
+export type AutomergeUpdater = (proxyDoc: AutomergeProxy) => void
 
 class RichContent {
   static fromRaw(raw: string, id) {
-    const doc = Automerge.load(raw)
-    return new RichContent(doc, id)
+    const root = Automerge.load(raw)
+    return new RichContent(root, id)
   }
 
   static fromJSON(json: any, id) {
-    const doc = fromJSON(json)
-    return new RichContent(doc, id)
+    const root = fromJSON(json)
+    return new RichContent(root, id)
   }
 
   static fromText(text: string, id) {
-    const doc = fromText(text)
-    return new RichContent(doc, id)
+    const root = fromText(text)
+    return new RichContent(root, id)
   }
 
-  doc: AutomergeRoot
+  root: AutomergeRoot
   id: string
   isDirty: boolean
 
-  constructor(doc: AutomergeRoot, id?: string) {
-    this.doc = doc
+  constructor(root: AutomergeRoot, id?: string) {
+    this.root = root
     this.id = id || String(nextID++)
     this.isDirty = true
   }
@@ -39,10 +39,10 @@ class RichContent {
     return isDirty
   }
 
-  applyChanges_(changes: AutomergeChanges) {
+  applyChanges_(changes?: AutomergeChanges) {
     if (changes) {
-      const nextDoc = Automerge.applyChanges(this.doc, changes)
-      this.doc = nextDoc
+      const nextDoc = Automerge.applyChanges(this.root, changes)
+      this.root = nextDoc
     }
     return this
   }
@@ -50,10 +50,10 @@ class RichContent {
   change_(messageOrUpdater: string | AutomergeUpdater, maybeUpdater?: AutomergeUpdater) {
     const message = typeof messageOrUpdater === 'string' ? messageOrUpdater : undefined
     const updater = message ? maybeUpdater : messageOrUpdater
-    const nextDoc = Automerge.change(this.doc, message, updater)
+    const nextDoc = Automerge.change(this.root, message, updater)
     // pointless for now, but will improve with https://github.com/automerge/automerge/issues/107
-    this.isDirty = this.isDirty || nextDoc !== this.doc
-    this.doc = nextDoc
+    this.isDirty = this.isDirty || nextDoc !== this.root
+    this.root = nextDoc
     return this
   }
 }

@@ -33,9 +33,9 @@ const makeTextDiff = (contentProxy: AutomergeProxy, oldValue: string, newValue: 
 }
 
 const commitChanges = (content: RichContent, ops: Ops) => {
-  content.change_('char', (doc: any) => {
+  content.change_('char', proxyDoc => {
     ops.forEach(({ oldValue, contentId, newValue }) => {
-      const contentProxy = doc._get(contentId)
+      const contentProxy = proxyDoc._get(contentId)
       makeTextDiff(contentProxy, oldValue, newValue)
     })
   })
@@ -43,7 +43,7 @@ const commitChanges = (content: RichContent, ops: Ops) => {
 
 const updateSchema = (content: RichContent, ops: Ops) => {
   ops.forEach(({ targetId, target }) => {
-    target._json = content.doc._state.getIn(['opSet', 'cache', targetId])
+    target._json = content.root._state.getIn(['opSet', 'cache', targetId])
   })
 }
 

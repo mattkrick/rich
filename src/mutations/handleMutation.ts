@@ -75,7 +75,7 @@ const handleMutation = (self: Editor) => (mutationsList: Array<MutationRecord>) 
   const nextRange = getNextPseudoRange(
     self.localRange,
     windowRange,
-    content.doc._actorId,
+    content.root._actorId,
     isBackward
   )
 

@@ -12,8 +12,19 @@ import RichContent from "../content/RichContent";
 
 export type Schema = () => void
 
+interface AutomergeState {
+  clock: AutomergeClock
+}
+
+interface AutomergeStateMap<P> {
+  
+}
+export interface AutomergeClock {
+  [actorId: string]: number
+}
+
 export interface AutomergeDoc {
-  _state: Map<string, Object>
+  _state: Map<[P in keyof AutomergeState], number>
   _objectId: string
   _actorId: string
 }
@@ -115,7 +126,7 @@ class Editor extends React.Component<Props> {
     const selection = window.getSelection()
     const range = selection.getRangeAt(0)
     const isBackward = getIsBackward(selection)
-    const psuedoRange = getNextPseudoRange(this.localRange, range, content.doc._actorId, isBackward)
+    const psuedoRange = getNextPseudoRange(this.localRange, range, content.root._actorId, isBackward)
     onChange(content, psuedoRange)
   }
 
@@ -132,7 +143,7 @@ class Editor extends React.Component<Props> {
     return (
       <React.Fragment>
         <div style={style} contentEditable suppressContentEditableWarning ref={this.rootRef} onSelect={this.onSelect}>
-          <DocNode node={content.doc} schema={schema} />
+          <DocNode node={content.root} schema={schema} />
         </div>
         <RemoteCursor remoteRangeMap={remoteRangeMap} contentRoot={contentRoot} />
       </React.Fragment>
