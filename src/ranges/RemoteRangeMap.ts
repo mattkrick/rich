@@ -12,23 +12,23 @@ interface RemoteRangeMapStore {
 class RemoteRangeMap {
   store: RemoteRangeMapStore
   dirty: boolean
-  constructor(store?: RemoteRangeMapStore) {
+  constructor (store?: RemoteRangeMapStore) {
     this.store = store || {}
     this.dirty = true
   }
 
-  isChanged() {
+  isChanged () {
     const dirty = this.dirty
     this.dirty = false
     return dirty
   }
 
-  map(mapFn) {
+  map (mapFn: (range: PseudoRange, actorId: string, self: this) => any): Array<any> {
     const actorIds = Object.keys(this.store)
-    return actorIds.map(actorId => mapFn(this.store[actorId], actorId, this))
+    return actorIds.map((actorId) => mapFn(this.store[actorId], actorId, this))
   }
 
-  applyUpdate_(updatedRange?: PseudoRange | RemoveRange): this {
+  applyUpdate_ (updatedRange?: PseudoRange | RemoveRange): this {
     if (updatedRange) {
       this.dirty = true
       const { actorId, startId } = updatedRange
@@ -41,7 +41,7 @@ class RemoteRangeMap {
     }
     return this
   }
-  removePeer_(peerId): this {
+  removePeer_ (peerId: string): this {
     delete this.store[peerId]
     return this
   }

@@ -3,36 +3,14 @@ import DocNode, {RichNode} from './DocNode';
 import handleMutation from '../mutations/handleMutation';
 import observerConfig from '../mutations/observerConfig';
 import setSelectionRange from '../ranges/setSelectionRange';
-import {Map} from 'immutable'
 import getNextPseudoRange from "../ranges/getNextPseudoRange";
 import RemoteCursor from "./RemoteCursor";
 import getIsBackward from "../ranges/getIsBackward";
 import RemoteRangeMap from "../ranges/RemoteRangeMap";
 import RichContent from "../content/RichContent";
+import {AutomergeObject, Automerge} from "@mattkrick/automerge";
 
 export type Schema = () => void
-
-interface AutomergeState {
-  clock: AutomergeClock
-}
-
-interface AutomergeStateMap<P> {
-  
-}
-export interface AutomergeClock {
-  [actorId: string]: number
-}
-
-export interface AutomergeDoc {
-  _state: Map<[P in keyof AutomergeState], number>
-  _objectId: string
-  _actorId: string
-}
-
-interface AutomergeText {
-  _objectId: string
-  join(delim: string): string
-}
 
 export interface TemporaryTextNode {
   type: 'text'
@@ -48,12 +26,12 @@ export interface TemporaryElement {
 
 export type TemporaryNode = TemporaryTextNode | TemporaryElement
 
-export interface AutomergeTextNode extends AutomergeDoc {
+export interface AutomergeTextNode extends AutomergeObject {
   type: 'text'
-  content: AutomergeText
+  content: Automerge.Text
 }
 
-export interface AutomergeElement extends AutomergeDoc {
+export interface AutomergeElement extends AutomergeObject {
   type: 'element'
   tagName: string
   attributes: Array<Object>
@@ -61,19 +39,7 @@ export interface AutomergeElement extends AutomergeDoc {
   meta?: Object
 }
 
-export interface AutomergeRoot extends AutomergeElement {}
-
 export type AutomergeNode = AutomergeTextNode | AutomergeElement
-
-export type AutomergeChanges = Array<Object>
-
-export interface AutomergeProxy {
-  insertAt(index: number, numberToDelete?: number): AutomergeProxy
-
-  deleteAt(index: number, numberToDelete?: number): AutomergeProxy
-
-  [key: string]: any
-}
 
 export interface PseudoRange {
   actorId: string

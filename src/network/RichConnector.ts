@@ -1,19 +1,25 @@
-import { getMissingChanges } from '@mattkrick/automerge'
+import {
+  AutomergeChanges,
+  AutomergeClock,
+  AutomergeClockObject,
+  getMissingChanges
+} from '@mattkrick/automerge'
 import { fromJS } from 'immutable'
-import { AutomergeChanges, PseudoRange } from '../components/Editor'
+import { PseudoRange } from '../components/Editor'
 import FastRTCSwarm from '@mattkrick/fast-rtc-swarm'
-import FastRTCPeer, { DATA, DATA_CLOSE, DATA_OPEN } from '@mattkrick/fast-rtc-peer'
+import FastRTCPeer, { DATA, DATA_CLOSE } from '@mattkrick/fast-rtc-peer'
 import EventEmitter from 'eventemitter3'
 import RemoteRangeMap from '../ranges/RemoteRangeMap'
 import RichContent from '../content/RichContent'
 
-const CLOCK_REQUEST = 'clockRequest'
-const CLOCK_RESPONSE = 'clockResponse'
+const DOC_REQUEST = 'docRequest'
+const DOC_RESPONSE = 'docResponse'
+const PEER_REMOVAL = 'peerRemoval'
 export const RICH_CHANGE = 'change'
 
 interface RichPeer extends FastRTCPeer {
   _rich: {
-    docSet: { [docId: string]: Map<string, number> }
+    docSet: {[docId: string]: Map<string, number>}
     requestSent: boolean
   }
 }
@@ -25,21 +31,18 @@ interface RichChange {
   changes?: AutomergeChanges
 }
 
-interface ClockResponse {
-  type: 'clockResponse'
-  clock: AutomergeClock
+interface DocResponse {
+  type: 'docResponse'
   docId: string
+  clock?: AutomergeClockObject
+  changes?: AutomergeChanges
+  range?: PseudoRange
 }
 
-interface ClockRequest {
-  type: 'clockRequest'
+interface DocRequest {
+  type: 'docRequest'
   docId: string
-}
-
-interface RichDoc {
-  content: RichContent
-  remoteRangeMap: RemoteRangeMap
-  localRange?: PseudoRange
+  clock: AutomergeClockObject
 }
 
 class PeerDoc {
@@ -47,160 +50,210 @@ class PeerDoc {
   peer: RichPeer
   clock: AutomergeClock
   clockReqSent: boolean
-  constructor(doc, peer, clock) {
+
+  constructor (doc: RichDoc, peer: RichPeer, clock: AutomergeClock) {
     this.doc = doc
     this.peer = peer
     this.clock = clock
     this.clockReqSent = false
   }
+
+  updateClock (newClock: AutomergeClock) {
+    this.clock = newClock
+  }
+}
+
+class RichDoc {
+  id: string
+  localRange?: PseudoRange
+
+  constructor (public content: RichContent, public remoteRangeMap: RemoteRangeMap) {
+    this.id = content.id
+  }
+}
+
+const getClock = (content: RichContent) => {
+  return content.root._state.getIn(['opSet', 'clock'])
 }
 
 class RichConnector extends EventEmitter {
-  swarm: FastRTCSwarm
   docSet: {
     [docId: string]: RichDoc
-  }
-  peerDocs: Array<PeerDoc>
+  } = {}
+  peerDocs: Array<PeerDoc> = []
 
-  constructor(swarm) {
+  constructor (public swarm: FastRTCSwarm) {
     super()
-    this.swarm = swarm
-    this.docSet = {}
-    this.peerDocs = []
     swarm.on(DATA, this.onData)
     swarm.on(DATA_CLOSE, this.onDataClose)
   }
 
-  private getPeerDoc(peer, doc) {
+  private getPeerDoc (peer: FastRTCPeer, doc: RichDoc) {
     return this.peerDocs.find((peerDoc) => peerDoc.doc === doc && peerDoc.peer === peer)
   }
 
-  private sendDiffAndUpdatePeer(
-    docId: string,
-    content: RichContent | undefined,
-    range: PseudoRange | undefined,
-    peer: RichPeer
-  ) {
-    const richChange = { type: RICH_CHANGE, docId } as RichChange
-    if (range) {
-      richChange.range = range
-    }
-    if (content) {
-      const myOpSet = content.root._state.get('opSet')
-      const peerClock = this.peerDocs.find((peerDoc) => peerDoc.)
-      richChange.changes = getMissingChanges(myOpSet, peer._rich.docSet[docId])
-      // optimistic update TODO remove this from this function
-      peer._rich.docSet[docId] = (myOpSet as any).get('clock')
-    }
-    peer.send(JSON.stringify({ type: RICH_CHANGE, ...richChange }))
+  private ensurePeerDoc (doc: RichDoc, peer: RichPeer, defaultClock: AutomergeClock) {
+    const existingPeerDoc = this.getPeerDoc(peer, doc)
+    if (existingPeerDoc) return existingPeerDoc
+    const peerDoc = new PeerDoc(doc, peer, defaultClock)
+    this.peerDocs.push(peerDoc)
+    return peerDoc
   }
 
-  flushChangesToPeer(docId, peer) {
+  private handleDocRequest (payload: DocRequest, peer: RichPeer) {
+    const { docId, clock } = payload
     const doc = this.docSet[docId]
-    if (!doc) return null
-    const peerDoc = this.getPeerDoc(peer, doc)
-    if (!peerDoc) return null
-    const {clock} = peerDoc
-    const myOpSet = doc.content.root._state.get('opSet')
-    const changes = getMissingChanges(myOpSet, clock)
-    peerDoc.clock = myOpSet.get('clock')
-  }
+    // ignore docs you don't have
+    if (!doc) return
 
-  addDoc(content, remoteRangeMap) {
-    const { docId } = content
-    this.docSet[docId] = {
-      content,
-      remoteRangeMap,
-      localRange: undefined
+    const immutableClock = fromJS(clock)
+    const existingPeerDoc = this.ensurePeerDoc(doc, peer, immutableClock)
+    const { content, localRange } = doc
+    const myOpSet = content.root._state.get('opSet')
+    const myClock = myOpSet.get('clock')
+    const response = { type: DOC_RESPONSE, docId, clock: myClock.toJS() } as DocResponse
+    const myChanges = getMissingChanges(myOpSet, immutableClock)
+    if (myChanges.size > 0) {
+      response.changes = myChanges
+      existingPeerDoc.updateClock(myClock)
     }
-    this.swarm.broadcast(JSON.stringify({ type: CLOCK_REQUEST, docId }))
+    if (localRange) {
+      response.range = localRange
+    }
+    peer.send(JSON.stringify(response))
   }
 
-  onData = (data: string, peer: RichPeer) => {
-    const payload = JSON.parse(data) as ClockResponse | ClockRequest | RichChange
-    const { type, docId } = payload
-    if (type === CLOCK_REQUEST) {
-      const doc = this.docSet[docId]
-      // ignore docs you don't have
-      if (!doc) return
+  private handleDocResponse (payload: DocResponse, peer: RichPeer) {
+    const { changes, clock, docId, range } = payload
+    const doc = this.docSet[docId]
+    // ignore responses that we didn't request
+    if (!doc) return
 
-      // if i have the doc, send them my clock
+    // apply changes
+    const { content, remoteRangeMap, localRange } = doc
+    content.applyChanges_(changes)
+    remoteRangeMap.applyUpdate_(range)
+
+    // send changes back
+    const immutableClock = fromJS(clock)
+    const myOpSet = content.root._state.get('opSet')
+    const myChanges = getMissingChanges(myOpSet, immutableClock)
+    const existingPeerDoc = this.ensurePeerDoc(doc, peer, immutableClock)
+    if (myChanges.length > 0) {
+      const myClock = myOpSet.get('clock')
       peer.send(
         JSON.stringify({
-          type: CLOCK_RESPONSE,
-          clock: this.docSet[docId].content.root._state.getIn(['opSet', 'clock']).toJS(),
-          docId
+          type: RICH_CHANGE,
+          docId,
+          changes: myChanges,
+          range: localRange
         })
       )
-    } else if (type === CLOCK_RESPONSE) {
-      const { clock } = payload as ClockResponse
-      const doc = this.docSet[docId]
-      const existingPeerDoc = this.getPeerDoc(peer, doc)
-      const immutableClock = fromJS(clock)
-      if (!existingPeerDoc) {
-        const peerDoc = new PeerDoc(doc, peer, immutableClock)
-        this.peerDocs.push(peerDoc)
-      } else {
-        existingPeerDoc.clock = immutableClock
-      }
-      sendDiffAndUpdatePeer(docId, doc.content, doc.localRange, peer)
-    } else if (type === RICH_CHANGE) {
-      const { docId, range, changes } = payload as RichChange
-      const doc = this.docSet[docId]
-      // if we don't have the doc, we don't care
-      if (!doc) return
-      const {content, remoteRangeMap} = doc
-      remoteRangeMap.applyUpdate_(range)
-      content.applyChanges_(changes)
-      const immutableClock = content.root._state.getIn(['opSet', 'clock'])
-      const existingPeerDoc = this.getPeerDoc(peer, doc)
-      // assume peer has converged with us
-      if (!existingPeerDoc) {
-        const peerDoc = new PeerDoc(doc, peer, immutableClock)
-        this.peerDocs.push(peerDoc)
-      } else {
-        existingPeerDoc.clock = immutableClock
-      }
+      existingPeerDoc.updateClock(myClock)
       this.emit(RICH_CHANGE, content, remoteRangeMap)
     }
   }
 
-  onDataClose = (peer) => {
+  private handleRichChange (payload: RichChange, peer: RichPeer) {
+    const { docId, changes, range } = payload
+    const doc = this.docSet[docId]
+    // if we don't have the doc, we don't care
+    if (!doc) return
+
+    // apply changes
+    const { content, remoteRangeMap } = doc
+    content.applyChanges_(changes)
+    remoteRangeMap.applyUpdate_(range)
+    this.emit(RICH_CHANGE, content, remoteRangeMap)
+    const peerDoc = this.getPeerDoc(peer, doc)!
+    if (peerDoc) {
+      peerDoc.updateClock(getClock(content))
+    }
+  }
+
+  private onData = (data: string, peer: RichPeer) => {
+    const payload = JSON.parse(data)
+    switch (payload.type) {
+      case DOC_REQUEST:
+        console.log('got doc req')
+        this.handleDocRequest(payload, peer)
+        break
+      case DOC_RESPONSE:
+        this.handleDocResponse(payload, peer)
+        break
+      case RICH_CHANGE:
+        this.handleRichChange(payload, peer)
+        break
+      case PEER_REMOVAL:
+        this.removePeerFromDocs(peer, payload.docId)
+    }
+  }
+
+  private onDataClose = (peer: RichPeer) => {
     this.removePeerFromDocs(peer)
   }
 
-  removePeerFromDocs(peer) {
-    for (let ii = this.peerDocs.length -1; ii >= 0; ii--) {
+  removePeerFromDocs (peer: RichPeer, docId?: string) {
+    for (let ii = this.peerDocs.length - 1; ii >= 0; ii--) {
       const peerDoc = this.peerDocs[ii]
       if (peerDoc.peer !== peer) continue
-      const {doc: {content, remoteRangeMap}} = peerDoc
+      if (docId !== undefined && docId !== peerDoc.doc.id) continue
+      const {
+        doc: { content, remoteRangeMap }
+      } = peerDoc
       remoteRangeMap.removePeer_(peer.id)
       this.peerDocs.splice(ii, 1)
       this.emit(RICH_CHANGE, content, remoteRangeMap)
     }
   }
 
-  dispatch = (content, localRange) => {
-    const { docId } = content
+  addDoc (content: RichContent, remoteRangeMap: RemoteRangeMap) {
+    const { id: docId } = content
+    this.docSet[docId] = new RichDoc(content, remoteRangeMap)
+    const clock = getClock(content).toJS()
+    console.log('broadcast doc req')
+    this.swarm.broadcast(JSON.stringify({ type: DOC_REQUEST, docId, clock }))
+  }
+
+  removeDoc (docId: string) {
     const doc = this.docSet[docId]
+    if (!doc) return
+    for (let ii = 0; ii < this.peerDocs.length; ii++) {
+      const peerDoc = this.peerDocs[ii]
+      if (peerDoc.doc !== doc) continue
+      peerDoc.peer.send(
+        JSON.stringify({
+          type: PEER_REMOVAL,
+          docId
+        })
+      )
+    }
+  }
+
+  dispatch = (content: RichContent, localRange: PseudoRange) => {
+    const { id: docId } = content
+    const doc = this.docSet[docId]
+    if (!doc) {
+      throw new Error('You must call `addDoc` before calling dispatch')
+    }
     const updatedRange = localRange !== doc.localRange ? localRange : undefined
     const updatedContent = content.isDirty ? content : undefined
     if (!updatedRange && !updatedContent) return
     doc.localRange = localRange
-    const peerDocs = this.peerDocs.filter((peerDoc) => peerDoc.doc === doc)
-    peerDocs.forEach((peerDoc) => {
-      sendDiffAndUpdatePeer(docId, updatedContent, updatedRange, peerDoc.peer)
-    })
-    // const peerIds = Object.keys(this.swarm.peers)
-    // peerIds.forEach(peerId => {
-      // const peer = this.swarm.peers[peerId] as RichPeer
-      // if (!peer._rich.docSet[docId] && !peer._rich.requestSent) {
-        // peer._rich.requestSent = true
-        // peer.send(JSON.stringify({ type: CLOCK_REQUEST, docId }))
-      // } else {
-        
-      // }
-    // })
+    const myOpSet = content.root._state.get('opSet')
+    for (let ii = 0; ii < this.peerDocs.length; ii++) {
+      const peerDoc = this.peerDocs[ii]
+      if (peerDoc.doc !== doc) continue
+      const changes = getMissingChanges(myOpSet, peerDoc.clock)
+      peerDoc.peer.send(
+        JSON.stringify({
+          type: RICH_CHANGE,
+          docId,
+          changes,
+          range: localRange
+        })
+      )
+    }
   }
 }
 

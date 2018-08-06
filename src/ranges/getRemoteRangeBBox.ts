@@ -55,7 +55,7 @@ const getEndContainerBBox = (endContainer: any, endOffset: number): BoundingBox 
   }
 
   // necessary for <br> IIRC
-  const { left, top, height, width } = (smallestEndContainer as any).getBoundingClientRect()
+  const { left, top, height, width } = smallestEndContainer.getBoundingClientRect()
   return { left, top, height, width }
 }
 

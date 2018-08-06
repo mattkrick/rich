@@ -1,13 +1,13 @@
 import voidElements from '../content/voidElements'
 import { QueuedRichNode, RichNode } from '../components/DocNode'
-import { AutomergeElement, TemporaryTextNode } from '../components/Editor'
+import { AutomergeElement } from '../components/Editor'
 import { ChildListMutation, ChildListQueue } from './handleMutation'
 
 export type AttachQueue = Map<RichNode, Set<RichNode> | undefined>
 
 const createLeaf = (node: RichNode) => {
   if (node.nodeType === Node.TEXT_NODE) {
-    ;(node as QueuedRichNode)._json = {
+    (node as QueuedRichNode)._json = {
       type: 'text',
       content: node.textContent || ''
     }
@@ -19,7 +19,7 @@ const createLeaf = (node: RichNode) => {
       attributes: []
     }
     if (!voidElements.has(tagName)) {
-      ;(node as any)._json.children = []
+      (node as any)._json.children = []
     }
   }
 }
@@ -39,7 +39,7 @@ const completeNode = (node: RichNode, target: RichNode, attachQueue: AttachQueue
     target._json.type === 'element' &&
     target._json.children &&
     target._json.children.find(
-      child => child._objectId === (node._json as AutomergeElement)._objectId
+      (child) => child._objectId === (node._json as AutomergeElement)._objectId
     )
   ) {
     // if it has json, see if the target already owns it. if so, no attachment necessary

@@ -5,10 +5,9 @@ import observerConfig from './observerConfig'
 import handleCharacterData from './handleCharacterData'
 import simplifyQueues from './simplifyQueues'
 import { RichNode } from '../components/DocNode'
-import Editor, { PseudoRange } from '../components/Editor'
+import Editor from '../components/Editor'
 import getNextPseudoRange from '../ranges/getNextPseudoRange'
 import getIsBackward from '../ranges/getIsBackward'
-import RichContent from '../content/RichContent'
 import processMutationList from './processMutationList'
 
 export interface WindowRange {
@@ -16,11 +15,6 @@ export interface WindowRange {
   endContainer: RichNode
   startOffset: number
   endOffset: number
-}
-
-export interface onChangeUpdates {
-  content?: RichContent
-  range?: PseudoRange
 }
 
 export interface ChildListMutation {

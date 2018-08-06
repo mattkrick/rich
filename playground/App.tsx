@@ -1,23 +1,22 @@
-import React from 'react';
-import Automerge, {getMissingChanges} from '@mattkrick/automerge'
+import React from 'react'
 import {Editor} from '../src/rich'
-import FastRTCSwarm from '@mattkrick/fast-rtc-swarm/src/FastRTCSwarm'
-import RichConnector, {RICH_CHANGE} from "../src/network/RichConnector";
-import RemoteRangeMap from "../src/ranges/RemoteRangeMap";
-import RichContent from "../src/content/RichContent";
+import FastRTCSwarm from '@mattkrick/fast-rtc-swarm'
+import RichConnector, {RICH_CHANGE} from '../src/network/RichConnector'
+import RemoteRangeMap from '../src/ranges/RemoteRangeMap'
+import RichContent from '../src/content/RichContent'
+import {PseudoRange} from '../src/components/Editor'
+import {DATA_OPEN} from '@mattkrick/fast-rtc-peer'
 
 let privateAddress
 // privateAddress = '192.168.1.103' // change this to your router-address address for easy LAN testing
-const socket = new WebSocket(`ws://${privateAddress || 'localhost'}:3000`);
-(window as any).Automerge = Automerge
+const socket = new WebSocket(`ws://${privateAddress || 'localhost'}:3000`)
 
 interface State {
-  content: RichContent,
+  content: RichContent
   remoteRangeMap: RemoteRangeMap
 }
 
-interface Props {
-}
+interface Props {}
 
 class App extends React.Component<Props, State> {
   state = {
@@ -27,11 +26,10 @@ class App extends React.Component<Props, State> {
   swarm!: FastRTCSwarm
   richConnector!: RichConnector
 
-  constructor(props) {
+  constructor(props: Props) {
     super(props)
     socket.addEventListener('open', () => {
       this.createSwarm()
-      this.createRichConnector()
     })
   }
 
@@ -44,11 +42,15 @@ class App extends React.Component<Props, State> {
       const payload = JSON.parse(event.data)
       this.swarm.dispatch(payload)
     })
+    this.swarm.on(DATA_OPEN, () => {
+      this.createRichConnector()
+    })
   }
 
   createRichConnector() {
     const {content, remoteRangeMap} = this.state
-    this.richConnector = new RichConnector(this.swarm, content, remoteRangeMap)
+    this.richConnector = new RichConnector(this.swarm)
+    this.richConnector.addDoc(content, remoteRangeMap)
     this.richConnector.on(RICH_CHANGE, (content, remoteRangeMap) => {
       this.setState({
         content,
@@ -57,7 +59,7 @@ class App extends React.Component<Props, State> {
     })
   }
 
-  onChange = (content, localRange) => {
+  onChange = (content: RichContent, localRange: PseudoRange) => {
     this.richConnector.dispatch(content, localRange)
     if (content.isChanged()) {
       this.setState({content})
@@ -68,15 +70,18 @@ class App extends React.Component<Props, State> {
     const {content, remoteRangeMap} = this.state
     // console.log('content', content)
     return (
-      <div style={{margin: 24, width: 300, border: '1px solid black', background: 'rgba(0,0,255,0.08)'}}>
-        <Editor
-          content={content}
-          onChange={this.onChange}
-          remoteRangeMap={remoteRangeMap}
-        />
+      <div
+        style={{
+          margin: 24,
+          width: 300,
+          border: '1px solid black',
+          background: 'rgba(0,0,255,0.08)'
+        }}
+      >
+        <Editor content={content} onChange={this.onChange} remoteRangeMap={remoteRangeMap} />
       </div>
     )
   }
 }
 
-export default App;
+export default App

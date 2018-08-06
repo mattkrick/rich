@@ -11,9 +11,9 @@ const correctTarget = (node: RichNode, target: RichNode, root: RichNode) => {
   if (!isPrepend && !isAppend) return target
   target.removeChild(node)
   if (isPrepend) {
-    ;(target.firstChild as any).prepend(node)
+    (target.firstChild as any).prepend(node)
   } else {
-    ;(target.firstChild as any).append(node)
+    (target.firstChild as any).append(node)
   }
   return target.firstChild
 }

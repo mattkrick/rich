@@ -9,8 +9,7 @@ const processAttachQueue = (attachQueue: AttachQueue, content: RichContent) => {
   const attachNodes = (nodeSet: Set<RichNode> | undefined, target: RichNode) => {
     if (!nodeSet) return
     // if the target doesn't exist yet, it's a child something that hasn't been added yet
-    const targetId = (target._json && (target._json as AutomergeElement | AutomergeTextNode))
-      ._objectId
+    const targetId = (target._json && target._json)._objectId
     if (!targetId) return
     for (let ii = 0; ii < target.childNodes.length; ii++) {
       const node = target.childNodes[ii] as any

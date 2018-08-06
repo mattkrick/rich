@@ -10,6 +10,7 @@ A decentralized collaborative rich text editor powered by DOM mutations, CRDT, a
 
 A collaborative rich text editor like google docs (without the google).
 
+![Rich](./docs/rich.gif)
 
 ## How's it different from slate, quill, draft, prosemirror, ckeditor?
 

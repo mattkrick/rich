@@ -1,5 +1,4 @@
-import Automerge from '@mattkrick/automerge'
-import { AutomergeNode, AutomergeProxy, AutomergeRoot } from '../components/Editor'
+import { AutomergeNode, AutomergeProxy } from '../components/Editor'
 import { ChildListMutation, ChildListQueue } from './handleMutation'
 import RichContent from '../content/RichContent'
 

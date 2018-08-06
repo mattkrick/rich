@@ -33,7 +33,7 @@ const makeTextDiff = (contentProxy: AutomergeProxy, oldValue: string, newValue: 
 }
 
 const commitChanges = (content: RichContent, ops: Ops) => {
-  content.change_('char', proxyDoc => {
+  content.change_('char', (proxyDoc) => {
     ops.forEach(({ oldValue, contentId, newValue }) => {
       const contentProxy = proxyDoc._get(contentId)
       makeTextDiff(contentProxy, oldValue, newValue)

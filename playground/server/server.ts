@@ -1,15 +1,15 @@
-import {AutomergeElement, AutomergeProxy} from "../../src/components/Editor";
-const {Server} = require( 'ws')
-const http = require( 'http')
-const express = require( 'express')
-const config = require( '../webpack.config.dev.js')
-const webpack = require( 'webpack')
-const fs = require( 'fs')
-const path = require( 'path')
-const {parse} = require( 'himalaya')
-const Automerge = require( '@mattkrick/automerge')
-const handleOnMessage = require('@mattkrick/fast-rtc-swarm/server')
+import {AutomergeElement, AutomergeNode} from '../../src/components/Editor'
 
+const {Server} = require('ws')
+const http = require('http')
+const express = require('express')
+const config = require('../webpack.config.dev.js')
+const webpack = require('webpack')
+const fs = require('fs')
+const path = require('path')
+const {parse} = require('himalaya')
+const Automerge = require('@mattkrick/automerge')
+const handleOnMessage = require('@mattkrick/fast-rtc-swarm/server')
 
 const html = fs.readFileSync(path.join(__dirname, './template.html'), 'utf8')
 const PORT = 3000
@@ -18,9 +18,9 @@ const server = http.createServer(app)
 const wss = new Server({server})
 server.listen(PORT)
 const compiler = webpack(config)
-const setContent = (node) => {
-  const {content} = node
-  if (content) {
+const setContent = (node: AutomergeNode) => {
+  if (node.type === 'text') {
+    const {content} = node
     node.content = new Automerge.Text()
     node.content.insertAt(0, ...content)
   } else if (node.children) {
@@ -32,7 +32,7 @@ const setContent = (node) => {
 
 // too lazy to make the playground handle imports for now
 const fromJSON = (json: AutomergeElement) => {
-  return Automerge.change(Automerge.init(), 'init', (proxyDoc: AutomergeProxy) => {
+  return Automerge.change(Automerge.init(), 'init', (proxyDoc: any) => {
     Object.keys(json).forEach((key) => {
       proxyDoc[key] = (json as any)[key]
     })
@@ -59,13 +59,13 @@ app.use(
   })
 )
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws: any) => {
   ws.on('message', (message: string) => {
     const payload = JSON.parse(message)
     if (handleOnMessage.default(wss.clients, ws, payload)) return
     if (payload.type === 'change') {
       for (let client of wss.clients) {
-        if (client as any !== ws && client.readyState === ws.OPEN) {
+        if ((client as any) !== ws && client.readyState === ws.OPEN) {
           client.send(message)
         }
       }
@@ -73,7 +73,10 @@ wss.on('connection', (ws) => {
   })
 })
 
-app.use('*', (req, res) => {
-  const html2 = html.replace('<head>', `<head><script>window._VAL_=${JSON.stringify(valStr)}</script>`)
+app.use('*', (_req: any, res: any) => {
+  const html2 = html.replace(
+    '<head>',
+    `<head><script>window._VAL_=${JSON.stringify(valStr)}</script>`
+  )
   res.send(html2)
 })

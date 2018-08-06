@@ -1,7 +1,7 @@
 import DEFAULT_COLORS from './defaultColors'
 
 let availableColors = [...DEFAULT_COLORS]
-const colorMap: { [actorId: string]: string } = {}
+const colorMap: {[actorId: string]: string} = {}
 
 const getActorColor = (actorId: string) => {
   if (!colorMap[actorId]) {
