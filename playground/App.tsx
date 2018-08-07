@@ -28,6 +28,7 @@ class App extends React.Component<Props, State> {
 
   constructor(props: Props) {
     super(props)
+    this.createRichConnector()
     socket.addEventListener('open', () => {
       this.createSwarm()
     })
@@ -43,13 +44,13 @@ class App extends React.Component<Props, State> {
       this.swarm.dispatch(payload)
     })
     this.swarm.on(DATA_OPEN, () => {
-      this.createRichConnector()
+      this.richConnector.addSwarm(this.swarm)
     })
   }
 
   createRichConnector() {
     const {content, remoteRangeMap} = this.state
-    this.richConnector = new RichConnector(this.swarm)
+    this.richConnector = new RichConnector()
     this.richConnector.addDoc(content, remoteRangeMap)
     this.richConnector.on(RICH_CHANGE, (content, remoteRangeMap) => {
       this.setState({

@@ -1,4 +1,5 @@
-import {AutomergeElement, AutomergeNode} from '../../src/components/Editor'
+import {AutomergeElement} from '../../src/components/Editor'
+import {AutomergeProxy} from "automerge";
 
 const {Server} = require('ws')
 const http = require('http')
@@ -18,13 +19,13 @@ const server = http.createServer(app)
 const wss = new Server({server})
 server.listen(PORT)
 const compiler = webpack(config)
-const setContent = (node: AutomergeNode) => {
+const setContent = (node: AutomergeProxy) => {
   if (node.type === 'text') {
-    const {content} = node
+    const { content } = node
     node.content = new Automerge.Text()
     node.content.insertAt(0, ...content)
   } else if (node.children) {
-    node.children.forEach((child) => {
+    node.children.forEach((child: AutomergeProxy) => {
       setContent(child)
     })
   }
@@ -62,7 +63,12 @@ app.use(
 wss.on('connection', (ws: any) => {
   ws.on('message', (message: string) => {
     const payload = JSON.parse(message)
-    if (handleOnMessage.default(wss.clients, ws, payload)) return
+    try {
+      if (handleOnMessage.default(wss.clients, ws, payload)) return
+    } catch{
+      return
+    }
+
     if (payload.type === 'change') {
       for (let client of wss.clients) {
         if (client !== ws && client.readyState === ws.OPEN) {

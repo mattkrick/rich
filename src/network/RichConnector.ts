@@ -76,12 +76,7 @@ class RichConnector extends EventEmitter {
     [docId: string]: RichDoc
   } = {}
   peerDocs: Array<PeerDoc> = []
-
-  constructor (public swarm: FastRTCSwarm) {
-    super()
-    swarm.on(DATA, this.onData)
-    swarm.on(DATA_CLOSE, this.onDataClose)
-  }
+  swarm?: FastRTCSwarm
 
   private getPeerDoc (peer: FastRTCPeer, doc: RichDoc) {
     return this.peerDocs.find((peerDoc) => peerDoc.doc === doc && peerDoc.peer === peer)
@@ -202,12 +197,20 @@ class RichConnector extends EventEmitter {
     }
   }
 
+  addSwarm (swarm: FastRTCSwarm) {
+    this.swarm = swarm
+    swarm.on(DATA, this.onData)
+    swarm.on(DATA_CLOSE, this.onDataClose)
+  }
+
   addDoc (content: RichContent, remoteRangeMap: RemoteRangeMap) {
     const { id: docId } = content
     this.docSet[docId] = new RichDoc(content, remoteRangeMap)
     const clock = getClock(content).toJS()
     console.log('broadcast doc req')
-    this.swarm.broadcast(JSON.stringify({ type: DOC_REQUEST, docId, clock }))
+    if (this.swarm) {
+      this.swarm.broadcast(JSON.stringify({ type: DOC_REQUEST, docId, clock }))
+    }
   }
 
   removeDoc (docId: string) {
