@@ -1,12 +1,11 @@
-import { RichNode } from '../components/DocNode'
 import getContainerByObjectId from '../content/getContainerByObjectId'
 import { PseudoRange } from '../components/Editor'
 import { BoundingBox } from '../components/RemoteSelectionRange'
 
 const getStartContainerBBox = (
-  startContainer: RichNode,
+  startContainer: Node,
   startOffset: number,
-  endContainer: RichNode,
+  endContainer: Node,
   endOffset: number
 ): BoundingBox => {
   if (startContainer.nodeType === Node.TEXT_NODE) {
@@ -22,7 +21,7 @@ const getStartContainerBBox = (
     topParentNode.removeChild(topTmpSpan)
     return { left, top, height, width }
   }
-  const { left, top, height, width } = (startContainer as any).getBoundingClientRect()
+  const { left, top, height, width } = (startContainer as Element).getBoundingClientRect()
   return { left, top, height, width }
 }
 
@@ -59,7 +58,7 @@ const getEndContainerBBox = (endContainer: any, endOffset: number): BoundingBox 
   return { left, top, height, width }
 }
 
-const getCollapsedCaret = (endContainer: RichNode, endOffset: number) => {
+const getCollapsedCaret = (endContainer: Node, endOffset: number) => {
   if (endContainer.nodeType === Node.TEXT_NODE) {
     const { top, left, height, width } = getEndContainerBBox(endContainer, endOffset) as BoundingBox
     return {
@@ -68,11 +67,15 @@ const getCollapsedCaret = (endContainer: RichNode, endOffset: number) => {
       height
     }
   }
-  const { left, top, height } = (endContainer as any).getBoundingClientRect()
+  const { left, top, height } = (endContainer as Element).getBoundingClientRect()
   return { left, top, height }
 }
 
-const getNestedMiddleBBoxes = (childNodes, endNode, selectionBoxes) => {
+const getNestedMiddleBBoxes = (
+  childNodes: NodeListOf<Node & ChildNode>,
+  endNode: Node,
+  selectionBoxes: Array<BoundingBox>
+) => {
   for (let ii = 0; ii < childNodes.length; ii++) {
     const node = childNodes[ii]
     if (node === endNode) return
@@ -92,15 +95,15 @@ const getNestedMiddleBBoxes = (childNodes, endNode, selectionBoxes) => {
   }
 }
 const getMiddleBBoxes = (
-  startContainer: RichNode,
-  endContainer: RichNode,
+  startContainer: Node,
+  endContainer: Node,
   selectionBoxes: Array<BoundingBox>
 ) => {
   let parentOfBoth = endContainer.parentNode
   while (parentOfBoth && !parentOfBoth.contains(startContainer)) {
     parentOfBoth = parentOfBoth.parentNode
   }
-  const { childNodes } = parentOfBoth as RichNode
+  const { childNodes } = parentOfBoth!
   let startContainerFound = false
   for (let ii = 0; ii < childNodes.length; ii++) {
     const node = childNodes[ii]
@@ -120,13 +123,13 @@ const getMiddleBBoxes = (
   }
 }
 
-const getRemoteRangeBBox = (pseudoRange: PseudoRange, contentRoot: RichNode) => {
+const getRemoteRangeBBox = (pseudoRange: PseudoRange, contentRoot: Node) => {
   const { startId, endId, endOffset, startOffset, isBackward } = pseudoRange
-  const startContainer = getContainerByObjectId(startId, contentRoot) as RichNode
+  const startContainer = getContainerByObjectId(startId, contentRoot)
+  if (!startContainer) return null
   const endContainer =
-    !endId || endId === startId
-      ? startContainer
-      : (getContainerByObjectId(endId, contentRoot) as RichNode)
+    !endId || endId === startId ? startContainer : getContainerByObjectId(endId, contentRoot)
+  if (!endContainer) return null
   const isCollapsed = !endId || (endId === startId && endOffset === startOffset)
   if (isCollapsed) {
     return {

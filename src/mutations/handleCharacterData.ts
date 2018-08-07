@@ -1,14 +1,14 @@
 import * as DMP from 'diff-match-patch'
-import { RichNode } from '../components/DocNode'
-import { AutomergeProxy, AutomergeTextNode } from '../components/Editor'
+import { AutomergeTextNode } from '../components/Editor'
 import RichContent from '../content/RichContent'
+import { AutomergeProxy } from 'automerge'
 
 const dmp = new DMP()
 
 interface CharOp {
   contentId: string
   oldValue: string
-  target: RichNode
+  target: Node
   targetId: string
   newValue: string
 }
@@ -47,11 +47,7 @@ const updateSchema = (content: RichContent, ops: Ops) => {
   })
 }
 
-const handleCharacterData = (
-  charQueue: Array<RichNode>,
-  contentRoot: RichNode,
-  content: RichContent
-) => {
+const handleCharacterData = (charQueue: Array<Node>, content: RichContent) => {
   const ops: Ops = []
   for (let ii = 0; ii < charQueue.length; ii++) {
     const target = charQueue[ii]

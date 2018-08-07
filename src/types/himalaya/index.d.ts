@@ -1,1 +1,3 @@
-export declare function parse (json: string): Array<any>
+declare module 'himalaya' {
+  function parse (json: string): Array<any>
+}

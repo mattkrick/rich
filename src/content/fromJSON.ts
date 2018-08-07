@@ -1,5 +1,5 @@
-import Automerge, { AutomergeProxy } from '@mattkrick/automerge'
-import { AutomergeElement } from '../components/Editor'
+import Automerge, { AutomergeProxy } from 'automerge'
+import { AutomergeRootElement } from '../components/Editor'
 
 const setContent = (node: AutomergeProxy) => {
   if (node.type === 'text') {
@@ -13,10 +13,10 @@ const setContent = (node: AutomergeProxy) => {
   }
 }
 
-const fromJSON = (json: AutomergeElement) => {
+const fromJSON = (json: AutomergeRootElement) => {
   return Automerge.change(Automerge.init(), 'init', (proxyDoc: AutomergeProxy) => {
     Object.keys(json).forEach((key) => {
-      proxyDoc[key] = (json as any)[key]
+      proxyDoc[key] = json[key]
     })
     setContent(proxyDoc)
   })

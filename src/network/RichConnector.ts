@@ -1,9 +1,3 @@
-import {
-  AutomergeChanges,
-  AutomergeClock,
-  AutomergeClockObject,
-  getMissingChanges
-} from '@mattkrick/automerge'
 import { fromJS } from 'immutable'
 import { PseudoRange } from '../components/Editor'
 import FastRTCSwarm from '@mattkrick/fast-rtc-swarm'
@@ -11,6 +5,7 @@ import FastRTCPeer, { DATA, DATA_CLOSE } from '@mattkrick/fast-rtc-peer'
 import EventEmitter from 'eventemitter3'
 import RemoteRangeMap from '../ranges/RemoteRangeMap'
 import RichContent from '../content/RichContent'
+import { AutomergeChanges, AutomergeClock, AutomergeClockObject, getMissingChanges } from 'automerge'
 
 const DOC_REQUEST = 'docRequest'
 const DOC_RESPONSE = 'docResponse'
@@ -139,7 +134,7 @@ class RichConnector extends EventEmitter {
     const myOpSet = content.root._state.get('opSet')
     const myChanges = getMissingChanges(myOpSet, immutableClock)
     const existingPeerDoc = this.ensurePeerDoc(doc, peer, immutableClock)
-    if (myChanges.length > 0) {
+    if (myChanges.size) {
       const myClock = myOpSet.get('clock')
       peer.send(
         JSON.stringify({

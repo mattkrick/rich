@@ -1,7 +1,6 @@
-import { AutomergeDoc } from '../components/Editor'
-import Automerge from '@mattkrick/automerge'
+import Automerge from 'automerge'
 
-const fromRaw = (raw: AutomergeDoc) => {
+const fromRaw = (raw: string) => {
   return Automerge.load(raw)
 }
 

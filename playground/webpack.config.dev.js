@@ -4,6 +4,9 @@ module.exports = {
   mode: 'development',
   devtool: 'cheap-module-source-map',
   resolve: {
+    alias: {
+      automerge: '@mattkrick/automerge'
+    },
     extensions: ['.js', '.json', '.ts', '.tsx'],
   },
   entry: {

@@ -19,7 +19,7 @@
     "target": "es2017",
     "strict": true,
     "sourceMap": true,
-    "baseUrl": "types",
-    "typeRoots": ["types"]
+    "baseUrl": "src/types",
+    "typeRoots": ["src/types"]
   }
 }

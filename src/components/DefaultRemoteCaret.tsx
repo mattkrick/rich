@@ -35,8 +35,8 @@ class DefaultRemoteCaret extends React.Component<Props, State> {
     this.scheduleHideFlag()
   }
 
-  componentDidUpdate(prevProps: Props, prevState: State) {
-    const {showFlag, pseudoRange} = this.state
+  componentDidUpdate(_prevProps: Props, prevState: State) {
+    const {pseudoRange} = this.state
     if (prevState.pseudoRange !== pseudoRange) {
       this.scheduleHideFlag()
     }

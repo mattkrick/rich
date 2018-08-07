@@ -8,7 +8,7 @@ const webpack = require('webpack')
 const fs = require('fs')
 const path = require('path')
 const {parse} = require('himalaya')
-const Automerge = require('@mattkrick/automerge')
+const Automerge = require('automerge')
 const handleOnMessage = require('@mattkrick/fast-rtc-swarm/server')
 
 const html = fs.readFileSync(path.join(__dirname, './template.html'), 'utf8')
@@ -34,7 +34,7 @@ const setContent = (node: AutomergeNode) => {
 const fromJSON = (json: AutomergeElement) => {
   return Automerge.change(Automerge.init(), 'init', (proxyDoc: any) => {
     Object.keys(json).forEach((key) => {
-      proxyDoc[key] = (json as any)[key]
+      proxyDoc[key] = json[key]
     })
     setContent(proxyDoc)
   })
@@ -65,7 +65,7 @@ wss.on('connection', (ws: any) => {
     if (handleOnMessage.default(wss.clients, ws, payload)) return
     if (payload.type === 'change') {
       for (let client of wss.clients) {
-        if ((client as any) !== ws && client.readyState === ws.OPEN) {
+        if (client !== ws && client.readyState === ws.OPEN) {
           client.send(message)
         }
       }

@@ -4,26 +4,25 @@ import processDetachQueue from './processDetachQueue'
 import observerConfig from './observerConfig'
 import handleCharacterData from './handleCharacterData'
 import simplifyQueues from './simplifyQueues'
-import { RichNode } from '../components/DocNode'
 import Editor from '../components/Editor'
 import getNextPseudoRange from '../ranges/getNextPseudoRange'
 import getIsBackward from '../ranges/getIsBackward'
 import processMutationList from './processMutationList'
 
 export interface WindowRange {
-  startContainer: RichNode
-  endContainer: RichNode
+  startContainer: Node
+  endContainer: Node
   startOffset: number
   endOffset: number
 }
 
 export interface ChildListMutation {
-  node: RichNode
-  target: RichNode
+  node: Node
+  target: Node
 }
 
 export type ChildListQueue = Array<ChildListMutation | undefined>
-export type CharQueue = Set<RichNode>
+export type CharQueue = Set<Node>
 
 const handleMutation = (self: Editor) => (mutationsList: Array<MutationRecord>) => {
   const rootEl = self.rootRef.current as HTMLDivElement
@@ -32,8 +31,8 @@ const handleMutation = (self: Editor) => (mutationsList: Array<MutationRecord>) 
   const { startContainer, endContainer, startOffset, endOffset } = selection.getRangeAt(0)
   const isBackward = getIsBackward(selection)
   const windowRange = {
-    startContainer: startContainer as RichNode,
-    endContainer: endContainer as RichNode,
+    startContainer: startContainer,
+    endContainer: endContainer,
     startOffset,
     endOffset
   }
@@ -64,7 +63,7 @@ const handleMutation = (self: Editor) => (mutationsList: Array<MutationRecord>) 
   const isNodeAddedOrRemoved = content.isDirty
 
   // update some nodes (do this last to avoid updating something that's being removed)
-  handleCharacterData(charQueue, (rootEl as any).firstChild, content)
+  handleCharacterData(charQueue, content)
 
   const nextRange = getNextPseudoRange(
     self.localRange,

@@ -1,8 +1,14 @@
-import Automerge, { AutomergeChanges, AutomergeRoot, AutomergeUpdater } from '@mattkrick/automerge'
+import Automerge, { AutomergeChanges, AutomergeUpdater } from 'automerge'
 import fromJSON from './fromJSON'
 import fromText from './fromText'
+import { AutomergeRootElement } from '../components/Editor'
 
 let nextID = 0
+
+// all roots are elements
+declare module 'automerge' {
+  interface AutomergeRoot extends AutomergeRootElement {}
+}
 
 class RichContent {
   static fromRaw (raw: string, id: string) {
@@ -20,11 +26,11 @@ class RichContent {
     return new RichContent(root, id)
   }
 
-  root: AutomergeRoot
+  root: AutomergeRootElement
   id: string
   isDirty: boolean
 
-  constructor (root: AutomergeRoot, id?: string) {
+  constructor (root: AutomergeRootElement, id?: string) {
     this.root = root
     this.id = id || String(nextID++)
     this.isDirty = true
@@ -45,9 +51,7 @@ class RichContent {
   }
 
   change_ (messageOrUpdater: string | AutomergeUpdater, maybeUpdater?: AutomergeUpdater) {
-    const message = typeof messageOrUpdater === 'string' ? messageOrUpdater : undefined
-    const updater = message ? maybeUpdater : messageOrUpdater
-    const nextDoc = Automerge.change(this.root, message, updater)
+    const nextDoc = Automerge.change(this.root, messageOrUpdater, maybeUpdater)
     // pointless for now, but will improve with https://github.com/automerge/automerge/issues/107
     this.isDirty = this.isDirty || nextDoc !== this.root
     this.root = nextDoc

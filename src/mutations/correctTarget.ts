@@ -1,9 +1,16 @@
 // when there is a tie, the caret is always at the end of a tag
 // which means creating a new line could create it under the root, instead of the first DocNode
 // if this happens, we put it where it belongs
-import { RichNode } from '../components/DocNode'
 
-const correctTarget = (node: RichNode, target: RichNode, root: RichNode) => {
+declare global {
+  // technically, this belongs on ParentNode, but the lib is all kinds of messed up
+  interface Node {
+    append (node: Node): void
+    prepend (node: Node): void
+  }
+}
+
+const correctTarget = (node: Node, target: Node, root: Element): Node => {
   if (target !== root) return target
   const isPrepend = target.firstChild === node
   const isAppend = target.lastChild === node
@@ -11,10 +18,10 @@ const correctTarget = (node: RichNode, target: RichNode, root: RichNode) => {
   if (!isPrepend && !isAppend) return target
   target.removeChild(node)
   if (isPrepend) {
-    (target.firstChild as any).prepend(node)
+    target.firstChild!.prepend(node)
   } else {
-    (target.firstChild as any).append(node)
+    target.firstChild!.append(node)
   }
-  return target.firstChild
+  return target.firstChild!
 }
 export default correctTarget

@@ -9,7 +9,7 @@ export interface BoundingBox {
 
 interface Props {
   bbox: BoundingBox
-  color
+  color: string
 }
 
 class RemoteSelectionRange extends React.Component<Props> {

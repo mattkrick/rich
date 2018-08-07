@@ -1,5 +1,4 @@
-import { RichNode } from '../components/DocNode'
-import { PseudoRange } from '../components/Editor'
+import { AutomergeNode, PseudoRange } from '../components/Editor'
 import { WindowRange } from '../mutations/handleMutation'
 
 const getNextPseudoRange = (
@@ -9,8 +8,8 @@ const getNextPseudoRange = (
   isBackward: boolean
 ) => {
   const { startOffset, startContainer, endOffset, endContainer } = windowRange
-  const windowStartId = (startContainer as RichNode)._json._objectId
-  const windowEndId = (endContainer as RichNode)._json._objectId
+  const windowStartId = (startContainer._json as AutomergeNode)._objectId
+  const windowEndId = (endContainer._json as AutomergeNode)._objectId
   if (
     pseudoRange &&
     pseudoRange.startOffset === startOffset &&

@@ -1,5 +1,5 @@
 import React from 'react'
-import DocNode, {RichNode} from './DocNode';
+import DocNode from './DocNode';
 import handleMutation from '../mutations/handleMutation';
 import observerConfig from '../mutations/observerConfig';
 import setSelectionRange from '../ranges/setSelectionRange';
@@ -8,7 +8,8 @@ import RemoteCursor from "./RemoteCursor";
 import getIsBackward from "../ranges/getIsBackward";
 import RemoteRangeMap from "../ranges/RemoteRangeMap";
 import RichContent from "../content/RichContent";
-import {AutomergeObject, Automerge} from "@mattkrick/automerge";
+import {AutomergeObject} from "automerge";
+import * as Automerge from "automerge";
 
 export type Schema = () => void
 
@@ -29,6 +30,10 @@ export type TemporaryNode = TemporaryTextNode | TemporaryElement
 export interface AutomergeTextNode extends AutomergeObject {
   type: 'text'
   content: Automerge.Text
+}
+
+export interface AutomergeRootElement extends AutomergeElement {
+  _objectId: '00000000-0000-0000-0000-000000000000'
 }
 
 export interface AutomergeElement extends AutomergeObject {
@@ -67,14 +72,14 @@ class Editor extends React.Component<Props> {
     this.observer.observe((this.rootRef.current as HTMLDivElement), observerConfig);
   }
 
-  componentDidUpdate(prevProps: Props) {
+  componentDidUpdate() {
     if (!this.rootRef.current || !this.observer) return
     const {remoteRangeMap} = this.props
     const rootEl = this.rootRef.current
     // listen to user input
     this.observer.observe(rootEl, observerConfig)
     if (this.localRange) {
-      const isChanged = setSelectionRange(this.localRange, rootEl.firstChild as RichNode)
+      const isChanged = setSelectionRange(this.localRange, rootEl.firstChild!)
       if (isChanged) {
         // TODO set scroll if needed
       }
@@ -105,13 +110,13 @@ class Editor extends React.Component<Props> {
     if (this.observer) {
       this.observer.disconnect()
     }
-    const contentRoot = this.rootRef.current && this.rootRef.current.firstChild as RichNode
+    const contentRoot = this.rootRef.current && this.rootRef.current.firstChild
     return (
       <React.Fragment>
         <div style={style} contentEditable suppressContentEditableWarning ref={this.rootRef} onSelect={this.onSelect}>
           <DocNode node={content.root} schema={schema} />
         </div>
-        <RemoteCursor remoteRangeMap={remoteRangeMap} contentRoot={contentRoot} />
+        {contentRoot && <RemoteCursor remoteRangeMap={remoteRangeMap} contentRoot={contentRoot} />}
       </React.Fragment>
     )
   }

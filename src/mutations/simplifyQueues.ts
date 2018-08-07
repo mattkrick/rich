@@ -1,12 +1,11 @@
 // if we're told to build something in the same breath we're told to destroy it, don't both building it
 
 import { ChildListMutation, ChildListQueue } from './handleMutation'
-import { RichNode } from '../components/DocNode'
 
 const simplifyQueues = (buildQueue: ChildListQueue, detachQueue: ChildListQueue) => {
   if (!buildQueue.length) return { buildQueue, detachQueue }
   let isMatch = false
-  const removedNodes: Array<RichNode> = []
+  const removedNodes: Array<Node> = []
   for (let ii = buildQueue.length - 1; ii >= 0; ii--) {
     const buildingBlock = buildQueue[ii] as ChildListMutation
     for (let jj = detachQueue.length - 1; jj >= 0; jj--) {

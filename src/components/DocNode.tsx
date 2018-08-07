@@ -1,19 +1,11 @@
-import React from 'react'
+import React, {ReactElement} from 'react'
 import * as ReactDOM from 'react-dom'
-import {
-  AutomergeNode,
-  TemporaryNode,
-  Schema,
-  AutomergeElement,
-  AutomergeTextNode
-} from "./Editor";
+import {AutomergeElement, AutomergeNode, AutomergeTextNode, Schema, TemporaryNode} from "./Editor";
 
-export type RichNode = Node & {
-  _json: AutomergeNode
-}
-
-export interface QueuedRichNode extends Node {
-  _json: TemporaryNode
+declare global {
+  interface Node {
+    _json?: AutomergeNode | TemporaryNode
+  }
 }
 
 interface Props {
@@ -25,6 +17,7 @@ const getElementType = (node: AutomergeElement, schema?: Schema) => {
   const {tagName, meta} = node
   if (meta) {
     return tagName
+    schema
     // TODO support custom nodes similar to how draft does it
     // const tag = schema(node)
     // if (tag) return tag
@@ -36,13 +29,16 @@ const renderText = (node: AutomergeTextNode) => {
   return node.content.join('')
 }
 
-const renderElement = (node: AutomergeElement, schema?: Schema) => {
-  const element = getElementType(node, schema)
-  const {children, attributes} = node as any
-  const reactChildren = children && children.length ? children.map((child: AutomergeNode) => {
-    return <DocNode node={child} schema={schema} key={child._objectId} />
-  }) : undefined
-  return React.createElement(element, {...attributes, key: node._objectId}, reactChildren)
+const renderElement = (node: AutomergeElement, schema?: Schema): ReactElement<{}> => {
+  const Element = getElementType(node, schema)
+  const {children, attributes} = node
+  return (
+    <Element key={node._objectId} {...attributes}>
+      {children && children.map((child: AutomergeNode) => (
+        <DocNode node={child} schema={schema} key={child._objectId} />
+      ))}
+    </Element>
+  )
 }
 
 const renderNodeType = (node: AutomergeNode, schema?: Schema) => {
@@ -67,7 +63,7 @@ class DocNode extends React.Component<Props> {
   }
 
   updateNode() {
-    const node = ReactDOM.findDOMNode(this) as any
+    const node = ReactDOM.findDOMNode(this)!
     node._json = this.props.node
   }
 

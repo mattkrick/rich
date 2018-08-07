@@ -1,18 +1,19 @@
 import isRangeEqual from './isRangeEqual'
 import { PseudoRange } from '../components/Editor'
-import { RichNode } from '../components/DocNode'
 import getContainerByObjectId from '../content/getContainerByObjectId'
 
-const setSelectionRange = (pseudoRange: PseudoRange, contentRoot: RichNode) => {
+const setSelectionRange = (pseudoRange: PseudoRange, contentRoot: Node) => {
   if (!pseudoRange) return false
   const { startId, endId, startOffset, endOffset } = pseudoRange
   // TODO cache containers by id
   const startContainer = getContainerByObjectId(startId, contentRoot)
+  if (!startContainer) return false
   const endContainer =
     !endId || endId === startId ? startContainer : getContainerByObjectId(endId, contentRoot)
+  if (!endContainer) return false
   const trustedRange = {
-    startContainer: startContainer as RichNode,
-    endContainer: endContainer as RichNode,
+    startContainer,
+    endContainer,
     startOffset,
     endOffset: endOffset || startOffset
   }

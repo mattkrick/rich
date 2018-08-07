@@ -1,5 +1,4 @@
 import React from 'react'
-import {RichNode} from "./DocNode";
 import DefaultRemoteCaret from "./DefaultRemoteCaret";
 import getRemoteRangeBBox from '../ranges/getRemoteRangeBBox'
 import RemoteSelectionRange, {BoundingBox} from "./RemoteSelectionRange";
@@ -8,7 +7,7 @@ import RemoteRangeMap from "../ranges/RemoteRangeMap";
 
 interface Props {
   remoteRangeMap: RemoteRangeMap
-  contentRoot?: RichNode | null
+  contentRoot?: Node
 }
 
 
@@ -17,7 +16,9 @@ class RemoteCursor extends React.Component<Props> {
     const {remoteRangeMap, contentRoot} = this.props
     if (!contentRoot) return null
     return remoteRangeMap.map((pseudoRange, actorId) => {
-      const {selectionBoxes, caretCoords: {left, top, height}} = getRemoteRangeBBox(pseudoRange, contentRoot)
+      const result = getRemoteRangeBBox(pseudoRange, contentRoot)
+      if (!result) return null
+      const {selectionBoxes, caretCoords: {left, top, height}} = result
       const color = getActorColor(actorId)
       return (
         <React.Fragment key={actorId}>
