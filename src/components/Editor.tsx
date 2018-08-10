@@ -59,7 +59,8 @@ interface Props {
   content: RichContent
   remoteRangeMap: RemoteRangeMap
   schema?: Schema
-  onChange: (content: RichContent, localRange: PseudoRange) => void
+  onChange: (content: RichContent, localRange: PseudoRange) => void,
+  plugins?: Array<any>
 }
 
 class Editor extends React.Component<Props> {

@@ -5,7 +5,7 @@ import RichConnector, {RICH_CHANGE} from '../src/network/RichConnector'
 import RemoteRangeMap from '../src/ranges/RemoteRangeMap'
 import RichContent from '../src/content/RichContent'
 import {PseudoRange} from '../src/components/Editor'
-import {DATA_OPEN} from '@mattkrick/fast-rtc-peer'
+import strikethroughPlugin from '../src/plugins/strikethroughPlugin'
 
 let privateAddress
 // privateAddress = '192.168.1.103' // change this to your router-address address for easy LAN testing
@@ -36,15 +36,13 @@ class App extends React.Component<Props, State> {
 
   createSwarm() {
     this.swarm = new FastRTCSwarm()
+    this.richConnector.addSwarm(this.swarm)
     this.swarm.on('signal', (signal) => {
       socket.send(JSON.stringify(signal))
     })
     socket.addEventListener('message', (event) => {
       const payload = JSON.parse(event.data)
       this.swarm.dispatch(payload)
-    })
-    this.swarm.on(DATA_OPEN, () => {
-      this.richConnector.addSwarm(this.swarm)
     })
   }
 
@@ -79,7 +77,7 @@ class App extends React.Component<Props, State> {
           background: 'rgba(0,0,255,0.08)'
         }}
       >
-        <Editor content={content} onChange={this.onChange} remoteRangeMap={remoteRangeMap} />
+        <Editor content={content} onChange={this.onChange} remoteRangeMap={remoteRangeMap} plugins={[strikethroughPlugin]} />
       </div>
     )
   }

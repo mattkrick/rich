@@ -1,7 +1,7 @@
 import { fromJS } from 'immutable'
 import { PseudoRange } from '../components/Editor'
 import FastRTCSwarm from '@mattkrick/fast-rtc-swarm'
-import FastRTCPeer, { DATA, DATA_CLOSE } from '@mattkrick/fast-rtc-peer'
+import FastRTCPeer, { DATA, DATA_CLOSE, DATA_OPEN } from '@mattkrick/fast-rtc-peer'
 import EventEmitter from 'eventemitter3'
 import RemoteRangeMap from '../ranges/RemoteRangeMap'
 import RichContent from '../content/RichContent'
@@ -183,6 +183,18 @@ class RichConnector extends EventEmitter {
     this.removePeerFromDocs(peer)
   }
 
+  private onDataOpen = (peer: RichPeer) => {
+    const docIds = Object.keys(this.docSet)
+    docIds.forEach((docId) => {
+      peer.send(this.makeDocRequest(docId))
+    })
+  }
+
+  private makeDocRequest (docId: string) {
+    const clock = getClock(this.docSet[docId].content).toJS()
+    return JSON.stringify({ type: DOC_REQUEST, docId, clock })
+  }
+
   removePeerFromDocs (peer: RichPeer, docId?: string) {
     for (let ii = this.peerDocs.length - 1; ii >= 0; ii--) {
       const peerDoc = this.peerDocs[ii]
@@ -199,17 +211,20 @@ class RichConnector extends EventEmitter {
 
   addSwarm (swarm: FastRTCSwarm) {
     this.swarm = swarm
+    swarm.on(DATA_OPEN, this.onDataOpen)
     swarm.on(DATA, this.onData)
     swarm.on(DATA_CLOSE, this.onDataClose)
+    const docIds = Object.keys(this.docSet)
+    docIds.forEach((docId) => {
+      swarm.broadcast(this.makeDocRequest(docId))
+    })
   }
 
   addDoc (content: RichContent, remoteRangeMap: RemoteRangeMap) {
     const { id: docId } = content
     this.docSet[docId] = new RichDoc(content, remoteRangeMap)
-    const clock = getClock(content).toJS()
-    console.log('broadcast doc req')
     if (this.swarm) {
-      this.swarm.broadcast(JSON.stringify({ type: DOC_REQUEST, docId, clock }))
+      this.swarm.broadcast(this.makeDocRequest(docId))
     }
   }
 

@@ -43,9 +43,9 @@
     ]
   },
   "dependencies": {
-    "@mattkrick/automerge": "^0.7.11",
     "@mattkrick/fast-rtc-peer": "^0.0.3",
     "@mattkrick/fast-rtc-swarm": "^0.0.3",
+    "automerge": "^0.8.0",
     "diff-match-patch": "^1.0.1",
     "eventemitter3": "^3.1.0",
     "himalaya": "^1.1.0",
