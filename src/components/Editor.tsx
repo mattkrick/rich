@@ -2,14 +2,11 @@ import React from 'react'
 import DocNode from './DocNode';
 import handleMutation from '../mutations/handleMutation';
 import observerConfig from '../mutations/observerConfig';
-import setSelectionRange from '../ranges/setSelectionRange';
-import getNextPseudoRange from "../ranges/getNextPseudoRange";
 import RemoteCursor from "./RemoteCursor";
-import getIsBackward from "../ranges/getIsBackward";
-import RemoteRangeMap from "../ranges/RemoteRangeMap";
-import RichContent from "../content/RichContent";
-import {AutomergeObject} from "automerge";
 import * as Automerge from "automerge";
+import {AutomergeObject} from "automerge";
+import RichDoc from "../RichDoc";
+import {CaretFlag} from "./DefaultCaretFlag";
 
 export type Schema = () => void
 
@@ -46,64 +43,53 @@ export interface AutomergeElement extends AutomergeObject {
 
 export type AutomergeNode = AutomergeTextNode | AutomergeElement
 
-export interface PseudoRange {
-  actorId: string
-  startId: string
-  startOffset: number
-  endId?: string
-  endOffset?: number
-  isBackward?: boolean
-}
-
 interface Props {
-  content: RichContent
-  remoteRangeMap: RemoteRangeMap
+  doc: RichDoc
   schema?: Schema
-  onChange: (content: RichContent, localRange: PseudoRange) => void,
-  plugins?: Array<any>
+  onChange: (doc: RichDoc, isUpdate: boolean) => void,
+  caretFlag?: CaretFlag
 }
 
 class Editor extends React.Component<Props> {
   observer?: MutationObserver
   rootRef = React.createRef<HTMLDivElement>()
-  localRange?: PseudoRange
 
   componentDidMount() {
+    this.rootRef.current!._json = this.props.doc.content.root
     this.observer = new MutationObserver(handleMutation(this))
     this.observer.observe((this.rootRef.current as HTMLDivElement), observerConfig);
   }
 
   componentDidUpdate() {
     if (!this.rootRef.current || !this.observer) return
-    const {remoteRangeMap} = this.props
+    const {doc: {peerRanges, localRange}} = this.props
     const rootEl = this.rootRef.current
     // listen to user input
     this.observer.observe(rootEl, observerConfig)
-    if (this.localRange) {
-      const isChanged = setSelectionRange(this.localRange, rootEl.firstChild!)
-      if (isChanged) {
-        // TODO set scroll if needed
-      }
+    const isNewLocalRange = localRange.toWindow(rootEl)
+    if (isNewLocalRange) {
+      // TODO set scroll if needed
     }
-    const isChanged = remoteRangeMap.isChanged()
-    if (isChanged) {
+
+    // TODO verify & possibly refactor
+    const isNewPeerRange = peerRanges.flush()
+    if (isNewPeerRange) {
       this.forceUpdate()
     }
   }
 
   onSelect = () => {
-    // TODO ignore if we already updated & sent this in the handleMutation
-    // sending 1 change instead of 2 in rapid succession means fewer renders
-    const {content, onChange} = this.props
-    const selection = window.getSelection()
-    const range = selection.getRangeAt(0)
-    const isBackward = getIsBackward(selection)
-    const psuedoRange = getNextPseudoRange(this.localRange, range, content.root._actorId, isBackward)
-    onChange(content, psuedoRange)
+    const {doc, onChange} = this.props
+    const {localRange} = doc
+    const isChanged = localRange.cacheRange().fromCache()
+    if (isChanged) {
+      onChange(doc, false)
+    }
   }
 
   render() {
-    const {content, remoteRangeMap, schema} = this.props
+    const {doc, caretFlag, schema} = this.props
+    const {content, peerRanges} = doc
     const style = {
       whiteSpace: 'pre-wrap'
     } as React.CSSProperties
@@ -111,13 +97,13 @@ class Editor extends React.Component<Props> {
     if (this.observer) {
       this.observer.disconnect()
     }
-    const contentRoot = this.rootRef.current && this.rootRef.current.firstChild
+    const rootEl = this.rootRef.current
     return (
       <React.Fragment>
         <div style={style} contentEditable suppressContentEditableWarning ref={this.rootRef} onSelect={this.onSelect}>
-          <DocNode node={content.root} schema={schema} />
+          {content.root.children!.map((child) => <DocNode key={child._objectId} node={child} schema={schema} />)}
         </div>
-        {contentRoot && <RemoteCursor remoteRangeMap={remoteRangeMap} contentRoot={contentRoot} />}
+        <RemoteCursor peerRanges={peerRanges} rootEl={rootEl} caretFlag={caretFlag} />
       </React.Fragment>
     )
   }

@@ -3,7 +3,7 @@ const path = require('path')
 module.exports = {
   mode: 'production',
   devtool: 'source-map',
-  entry: path.join(__dirname, 'src', 'rich.ts'),
+  entry: path.join(__dirname, 'src', 'index.ts'),
   output: {
     path: path.join(__dirname, './dist'),
     filename: 'rich.js',

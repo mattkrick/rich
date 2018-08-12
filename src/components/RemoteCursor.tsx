@@ -3,26 +3,32 @@ import DefaultRemoteCaret from "./DefaultRemoteCaret";
 import getRemoteRangeBBox from '../ranges/getRemoteRangeBBox'
 import RemoteSelectionRange, {BoundingBox} from "./RemoteSelectionRange";
 import getActorColor from "../ranges/getNextColor";
-import RemoteRangeMap from "../ranges/RemoteRangeMap";
+import PeerRanges from "../ranges/PeerRanges";
+import {CaretFlag, CaretFlagProps} from "./DefaultCaretFlag";
 
 interface Props {
-  remoteRangeMap: RemoteRangeMap
-  contentRoot?: Node
+  getName?: (peerId: string) => string
+  peerRanges: PeerRanges
+  rootEl: Node | null,
+  caretFlag?: CaretFlag
 }
 
+const defaultCaretFlag = (props: CaretFlagProps) => props.peerId
 
 class RemoteCursor extends React.Component<Props> {
   render() {
-    const {remoteRangeMap, contentRoot} = this.props
-    if (!contentRoot) return null
-    return remoteRangeMap.map((pseudoRange, actorId) => {
-      const result = getRemoteRangeBBox(pseudoRange, contentRoot)
+    const {caretFlag = defaultCaretFlag, peerRanges, rootEl} = this.props
+    if (!rootEl) return null
+    return peerRanges.map((peerRange) => {
+      const result = getRemoteRangeBBox(peerRange, rootEl)
       if (!result) return null
+      const {peerId} = peerRange
       const {selectionBoxes, caretCoords: {left, top, height}} = result
-      const color = getActorColor(actorId)
+      const color = getActorColor(peerId)
+      const flag = caretFlag({peerId})
       return (
-        <React.Fragment key={actorId}>
-          <DefaultRemoteCaret left={left} top={top} height={height} pseudoRange={pseudoRange} color={color} />
+        <React.Fragment key={peerId}>
+          <DefaultRemoteCaret left={left} top={top} height={height} peerRange={peerRange} color={color} flag={flag}/>
           {selectionBoxes.map((bbox: BoundingBox) => {
             return (
               <RemoteSelectionRange key={bbox.top} bbox={bbox} color={color} />

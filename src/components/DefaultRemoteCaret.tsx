@@ -1,31 +1,22 @@
 import * as React from "react";
 import DefaultCaretFlag from "./DefaultCaretFlag";
-import {PseudoRange} from "./Editor";
+import {PeerRange} from "../ranges/PeerRanges";
 
 interface Props {
   left: number,
   top: number,
   height: number,
-  pseudoRange: PseudoRange
+  peerRange: PeerRange
   color: string
+  flag: string
 }
 
 interface State {
-  pseudoRange?: PseudoRange
   showFlag: boolean
 }
 
 class DefaultRemoteCaret extends React.Component<Props, State> {
-  static getDerivedStateFromProps(nextProps: Props, prevState: State) {
-    if (nextProps.pseudoRange === prevState.pseudoRange) return null
-    return {
-      pseudoRange: nextProps.pseudoRange,
-      showFlag: true
-    }
-  }
-
   state = {
-    pseudoRange: undefined,
     showFlag: true
   }
 
@@ -35,9 +26,8 @@ class DefaultRemoteCaret extends React.Component<Props, State> {
     this.scheduleHideFlag()
   }
 
-  componentDidUpdate(_prevProps: Props, prevState: State) {
-    const {pseudoRange} = this.state
-    if (prevState.pseudoRange !== pseudoRange) {
+  componentDidUpdate(prevProps: Props) {
+    if (prevProps.peerRange !== this.props.peerRange) {
       this.scheduleHideFlag()
     }
   }
@@ -48,6 +38,11 @@ class DefaultRemoteCaret extends React.Component<Props, State> {
 
   scheduleHideFlag = () => {
     clearTimeout(this.hideFlagTimer)
+    if (!this.state.showFlag) {
+      this.setState({
+        showFlag: true
+      })
+    }
     this.hideFlagTimer = window.setTimeout(() => {
       this.setState({
         showFlag: false
@@ -56,7 +51,7 @@ class DefaultRemoteCaret extends React.Component<Props, State> {
   }
 
   render() {
-    const {color, left, top, height, pseudoRange} = this.props
+    const {color, left, top, height, flag} = this.props
     const {showFlag} = this.state
     const style = {
       position: 'absolute',
@@ -81,7 +76,7 @@ class DefaultRemoteCaret extends React.Component<Props, State> {
       <div style={style}>
         <span style={caretStyle} />
         <span style={topStyle} />
-        {showFlag && <DefaultCaretFlag color={color} pseudoRange={pseudoRange} />}
+        {showFlag && <DefaultCaretFlag color={color} flag={flag} />}
       </div>
     )
   }

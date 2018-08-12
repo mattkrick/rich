@@ -1,27 +1,29 @@
 import React from 'react'
-import {Editor} from '../src/rich'
+import {Editor} from '../src/index'
 import FastRTCSwarm from '@mattkrick/fast-rtc-swarm'
 import RichConnector, {RICH_CHANGE} from '../src/network/RichConnector'
-import RemoteRangeMap from '../src/ranges/RemoteRangeMap'
-import RichContent from '../src/content/RichContent'
-import {PseudoRange} from '../src/components/Editor'
 import strikethroughPlugin from '../src/plugins/strikethroughPlugin'
+import RichDoc from "../src/RichDoc";
+import {CaretFlagProps} from "../src/components/DefaultCaretFlag";
 
 let privateAddress
 // privateAddress = '192.168.1.103' // change this to your router-address address for easy LAN testing
 const socket = new WebSocket(`ws://${privateAddress || 'localhost'}:3000`)
 
 interface State {
-  content: RichContent
-  remoteRangeMap: RemoteRangeMap
+  doc: RichDoc
 }
 
-interface Props {}
+interface Props {
+}
+
+const caretFlag = (_props: CaretFlagProps) => {
+  return 'Matt'
+}
 
 class App extends React.Component<Props, State> {
   state = {
-    content: RichContent.fromRaw((window as any)._VAL_, '1'),
-    remoteRangeMap: new RemoteRangeMap()
+    doc: new RichDoc('1', (window as any)._VAL_, [strikethroughPlugin]),
   }
   swarm!: FastRTCSwarm
   richConnector!: RichConnector
@@ -47,27 +49,23 @@ class App extends React.Component<Props, State> {
   }
 
   createRichConnector() {
-    const {content, remoteRangeMap} = this.state
+    const {doc} = this.state
     this.richConnector = new RichConnector()
-    this.richConnector.addDoc(content, remoteRangeMap)
-    this.richConnector.on(RICH_CHANGE, (content, remoteRangeMap) => {
-      this.setState({
-        content,
-        remoteRangeMap
-      })
+    this.richConnector.addDoc(doc)
+    this.richConnector.on(RICH_CHANGE, () => {
+      this.forceUpdate()
     })
   }
 
-  onChange = (content: RichContent, localRange: PseudoRange) => {
-    this.richConnector.dispatch(content, localRange)
-    if (content.isChanged()) {
-      this.setState({content})
+  onChange = (doc: RichDoc, isContentUpdate: boolean) => {
+    this.richConnector.dispatch(doc.id)
+    if (isContentUpdate) {
+      this.forceUpdate()
     }
   }
 
   render() {
-    const {content, remoteRangeMap} = this.state
-    // console.log('content', content)
+    const {doc} = this.state
     return (
       <div
         style={{
@@ -77,7 +75,7 @@ class App extends React.Component<Props, State> {
           background: 'rgba(0,0,255,0.08)'
         }}
       >
-        <Editor content={content} onChange={this.onChange} remoteRangeMap={remoteRangeMap} plugins={[strikethroughPlugin]} />
+        <Editor onChange={this.onChange} doc={doc} caretFlag={caretFlag} />
       </div>
     )
   }

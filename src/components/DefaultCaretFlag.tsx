@@ -1,14 +1,19 @@
 import * as React from "react";
-import {PseudoRange} from "./Editor";
 
 interface Props {
   color: string
-  pseudoRange: PseudoRange
+  flag: string
 }
+
+export interface CaretFlagProps {
+  peerId: string
+}
+
+export type CaretFlag = (props: CaretFlagProps) => string
 
 class DefaultCaretFlag extends React.Component<Props> {
   render() {
-    const {color, pseudoRange} = this.props
+    const {color, flag} = this.props
     const flagStyle = {
       backgroundColor: color,
       color: 'white',
@@ -19,9 +24,8 @@ class DefaultCaretFlag extends React.Component<Props> {
       padding: 2,
       whiteSpace: 'nowrap'
     } as React.CSSProperties
-    const {actorId} = pseudoRange
     return (
-      <span style={flagStyle}>{actorId}</span>
+      <span style={flagStyle}>{flag}</span>
     )
   }
 }

@@ -1,6 +1,6 @@
 import getContainerByObjectId from '../content/getContainerByObjectId'
-import { PseudoRange } from '../components/Editor'
 import { BoundingBox } from '../components/RemoteSelectionRange'
+import { RichRange } from './LocalRange'
 
 const getStartContainerBBox = (
   startContainer: Node,
@@ -123,12 +123,12 @@ const getMiddleBBoxes = (
   }
 }
 
-const getRemoteRangeBBox = (pseudoRange: PseudoRange, contentRoot: Node) => {
-  const { startId, endId, endOffset, startOffset, isBackward } = pseudoRange
-  const startContainer = getContainerByObjectId(startId, contentRoot)
+const getRemoteRangeBBox = (richRange: RichRange, rootEl: Node) => {
+  const { startId, endId, endOffset, startOffset, isBackward } = richRange
+  const startContainer = getContainerByObjectId(startId, rootEl)
   if (!startContainer) return null
   const endContainer =
-    !endId || endId === startId ? startContainer : getContainerByObjectId(endId, contentRoot)
+    !endId || endId === startId ? startContainer : getContainerByObjectId(endId, rootEl)
   if (!endContainer) return null
   const isCollapsed = !endId || (endId === startId && endOffset === startOffset)
   if (isCollapsed) {

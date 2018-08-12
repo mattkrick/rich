@@ -1,8 +1,6 @@
-import correctTarget from './correctTarget'
 import { CharQueue, ChildListQueue } from './handleMutation'
 
-const processMutationList = (mutationsList: Array<MutationRecord>, rootEl: HTMLDivElement) => {
-  let isContentEditableOverride = false
+const processMutationList = (mutationsList: Array<MutationRecord>) => {
   const rawCharQueue: CharQueue = new Set()
   const rawBuildQueue: ChildListQueue = []
   const rawDetachQueue: ChildListQueue = []
@@ -18,14 +16,10 @@ const processMutationList = (mutationsList: Array<MutationRecord>, rootEl: HTMLD
       const addedNodes = mutation.addedNodes
       for (let ii = 0; ii < addedNodes.length; ii++) {
         const node = addedNodes[ii]
-        const correctedTarget = correctTarget(node, target, rootEl)
         rawBuildQueue.push({
           node,
-          target: correctedTarget
+          target
         })
-        if (correctedTarget !== target) {
-          isContentEditableOverride = true
-        }
       }
       const removedNodes = mutation.removedNodes
       for (let ii = 0; ii < removedNodes.length; ii++) {
@@ -37,7 +31,7 @@ const processMutationList = (mutationsList: Array<MutationRecord>, rootEl: HTMLD
       }
     }
   }
-  return { rawCharQueue, rawBuildQueue, rawDetachQueue, isContentEditableOverride }
+  return { rawCharQueue, rawBuildQueue, rawDetachQueue }
 }
 
 export default processMutationList

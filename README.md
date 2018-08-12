@@ -69,11 +69,9 @@ Introduce a lag in sending changes to _really_ test the collaborative editing
 ## API
 
 - `<Editor/>`: The primary component with the following properties
-  - `content`: The document content, which is the result of `RichContent.fromRaw`, `RichContent.fromText`, or `RichContent.fromJSON`
-  - `remoteRangeMap`: The selection ranges of other connected peers, which is the result of `new RemoteRangeMap()`
-  - `onChange(content, localRange)`: a callback that fires whenever you change the content or your caret position
+  - `doc`: The document, including the content, local selection range, and the selection ranges of connected peers
+  - `onChange(doc)`: a callback that fires whenever you change the content or your caret position
 
-- `RemoteRangeMap(store?)`: a class to instantiate your remoteRangeMap. The `store` is the dehydrated remote range map (you probably won't use that)
 - `RichContent.fromRaw`: a function that rehydrates your saved content
 - `RichContent.fromText`: a function that turns a string of text into new content
 - `RichContent.fromJSON`: a function that turns a serialized DOM into a Rich document
